@@ -177,6 +177,7 @@ class HaystackSerializer(six.with_metaclass(HaystackSerializerMeta, serializers.
         # names with the index class to which they belong or, optionally, a user-provided alias
         # for the index.
         for index_cls in self.Meta.index_classes:
+
             prefix = ""
             if prefix_field_names:
                 prefix = "_%s__" % self._get_index_class_name(index_cls)
@@ -217,12 +218,20 @@ class HaystackSerializer(six.with_metaclass(HaystackSerializerMeta, serializers.
         not be valid for all results. Do not render the fields which don't belong
         to the search result.
         """
+
+        self.searchindex = None
+        if hasattr(self, 'index'):
+            self.searchindex = self.index
+        else:
+            self.searchindex = index.searchindex
+
         if self.Meta.serializers:
             ret = self.multi_serializer_representation(instance)
         else:
             ret = super(HaystackSerializer, self).to_representation(instance)
             prefix_field_names = len(getattr(self.Meta, "index_classes")) > 1
-            current_index = self._get_index_class_name(type(instance.searchindex))
+
+            current_index = self._get_index_class_name(type(self.searchindex))
             for field in self.fields.keys():
                 orig_field = field
                 if prefix_field_names:
@@ -233,7 +242,7 @@ class HaystackSerializer(six.with_metaclass(HaystackSerializerMeta, serializers.
                         if index == current_index:
                             ret[field] = ret[orig_field]
                         del ret[orig_field]
-                elif field not in chain(instance.searchindex.fields.keys(), self._declared_fields.keys()):
+                elif field not in chain(self.searchindex.fields.keys(), self._declared_fields.keys()):
                     del ret[orig_field]
 
         # include the highlighted field in either case
@@ -243,7 +252,7 @@ class HaystackSerializer(six.with_metaclass(HaystackSerializerMeta, serializers.
 
     def multi_serializer_representation(self, instance):
         serializers = self.Meta.serializers
-        index = instance.searchindex
+        index = self.searchindex
         serializer_class = serializers.get(type(index), None)
         if not serializer_class:
             raise ImproperlyConfigured("Could not find serializer for %s in mapping" % index)
