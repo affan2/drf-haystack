@@ -223,7 +223,7 @@ class HaystackSerializer(six.with_metaclass(HaystackSerializerMeta, serializers.
         if hasattr(self, 'index'):
             self.searchindex = self.index
         else:
-            self.searchindex = index.searchindex
+            self.searchindex = instance.searchindex
 
         if self.Meta.serializers:
             ret = self.multi_serializer_representation(instance)
